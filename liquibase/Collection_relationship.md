@@ -251,3 +251,36 @@ insert into employee (name, department_id) values ('Charlie', 1);
 insert into employee (name, department_id) values ('Bob', 1);
 ```
 Hibernate xóa toàn bộ và insert lại tất cả phẩn tử!
+___
+Ưu điểm:
+- Khi **insert ban đầu** → rất nhanh, SQL đơn giản
+- Không cần `equals()` hoặc `list-index`
+
+Nhược điểm:
+- Khi update → **xóa toàn bộ và chèn lại toàn bộ**
+- Không có thứ tự
+- Không thể dirty-check từng phần tử
+- Không hiệu quả khi dữ liệu lớn
+
+## 5. So sánh khi `save` / `update`
+| Collection | Khi Save mới                | Khi Update                     | Có thứ tự | Có phần tử trùng | Hiệu năng       |
+| ---------- | --------------------------- | ------------------------------ | --------- | ---------------- | --------------- |
+| **Set**    | Rất nhanh, insert chính xác | Cập nhật đúng phần tử thay đổi | ❌ Không   | ❌ Không          | ✅ Tốt           |
+| **List**   | Chậm hơn (thêm cột index)   | Có thể update hàng loạt index  | ✅ Có      | ✅ Có             | ⚠️ Trung bình   |
+| **Bag**    | Nhanh nhất khi insert       | Xóa toàn bộ rồi insert lại     | ❌ Không   | ✅ Có             | ❌ Tệ khi update |
+
+## 6. Khi nào nên chọn loại save/update thường xuyên
+| Tình huống thực tế                                                     | Loại nên dùng | Lý do                       |
+| ---------------------------------------------------------------------- | ------------- | --------------------------- |
+| Quan hệ 1-nhiều dữ liệu ít thay đổi (ví dụ: `Department` – `Employee`) | `<set>`       | Tối ưu update               |
+| Danh sách có thứ tự rõ ràng (ví dụ: `Survey` – `Question`)             | `<list>`      | Giữ thứ tự câu hỏi          |
+| Dữ liệu chỉ insert 1 lần, ít update (ví dụ: `Order` – `OrderItem`)     | `<bag>`       | Insert nhanh                |
+| Quan hệ nhiều-nhiều (user-role, tag-post)                              | `<set>`       | Tránh trùng, update ổn định |
+
+## 7. Tổng kết nhanh
+| Loại     | Ưu điểm chính                           | Nhược điểm chính           | Dùng khi                             |
+| -------- | --------------------------------------- | -------------------------- | ------------------------------------ |
+| **Set**  | Dễ dirty-check, insert/update chính xác | Không trùng, không thứ tự  | Quan hệ ổn định, dữ liệu duy nhất    |
+| **List** | Giữ thứ tự                              | Cập nhật index tốn chi phí | Khi thứ tự quan trọng                |
+| **Bag**  | Insert nhanh                            | Update xóa toàn bộ         | Khi chỉ cần thêm dữ liệu (ít update) |
+
